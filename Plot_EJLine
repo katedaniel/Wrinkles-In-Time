@@ -1,0 +1,99 @@
+#########################################################
+###############      Create Function       ##############
+###############  to Obtain Radial Action   ##############
+###############     from Jacobi Energy     ##############
+###############   at Primary Resonances    ##############
+#########################################################
+
+
+from galpy.potential import epifreq
+
+
+def getJRfromJacobienergy(m, omegas): 
+    pot = mwp
+
+#     m = 4
+#     ro = 8
+#     vo = 220
+
+    OLR = lindbladR(Pot=pot, OmegaP=omegas, m=-m, ro=ro,vo=vo) # m being negative makes this an OLR; in physical units
+    ILR = lindbladR(Pot=pot, OmegaP=omegas, m=m, ro=ro,vo=vo) #lindbladR must have ro and vo in order to solve tuple problem
+    CR = lindbladR(Pot=pot, OmegaP=omegas, m='corotation', ro=ro,vo=vo)
+
+    pot_ILR = evaluatePotentials(mwp, ILR, z=0, phi=0, ro=ro,vo=vo)
+    pot_OLR = evaluatePotentials(mwp, OLR, z=0, phi=0, ro=ro,vo=vo)
+    pot_CR = evaluatePotentials(mwp, CR, z=0, phi=0, ro=ro,vo=vo)
+
+#     print ('This is evaluatepotential for ILR:',pot_ILR)
+#     print ('\nThis is evaluatepotential for OLR:',pot_OLR)
+#     print ('\nThis is evaluatepotential for CR:',pot_CR)
+
+    # print ('This is mwp:',mwp)
+    kappa_ILR = epifreq(pot,R=ILR/ro,ro=ro,vo=vo)
+#     print ('\nThis is kappa_ILR:',kappa_ILR)
+
+    kappa_OLR = epifreq(pot,R=OLR/ro,ro=ro,vo=vo)
+#     print('\nThis is kappa_OLR:',kappa_OLR)
+
+    kappa_CR = epifreq(pot,R=CR/ro,ro=ro,vo=vo)
+#     print('\nThis is kappa_CR:',kappa_CR)
+
+    OmegaP = omegas*(vo/ro) #pattern speed at corotation
+#     print ('\nThis is OmegaP:',OmegaP)
+
+    v_c_ILR = vcirc(mwp, R = ILR/ro, ro = ro, vo = vo) #in physical units
+    OmegaP_ILR = v_c_ILR/ILR
+
+    v_c_OLR = vcirc(mwp, R = OLR/ro, ro = ro, vo = vo) #in physical units
+    OmegaP_OLR = v_c_OLR/OLR
+
+    E_c_ILR = pot_ILR + (1/2)*vcirc(mwp,R=ILR/ro,ro=ro,vo=vo)**2
+    E_c_OLR = pot_OLR + (1/2)*vcirc(mwp,R=OLR/ro,ro=ro,vo=vo)**2
+    E_c_CR = pot_CR + (1/2)*vcirc(mwp,R=CR/ro,ro=ro,vo=vo)**2
+
+#     print('\nThis is KE:', vcirc(mwp,R=ILR/ro,ro=ro,vo=vo)**2)
+#     print ('\nThis is circular energy for ILR',E_c_ILR)
+#     print ('\nThis is circular energy for OLR',E_c_OLR)
+#     print ('\nThis is circular energy for CR',E_c_CR)
+
+    # E_J_ILR = E_c_ILR - OmegaP*ILR*vcirc(mwp,R=ILR/ro,ro=ro,vo=vo)
+    # print ('\nThis is Jacobi Integral of ILR', E_J_ILR)
+
+    # E_J_OLR = E_c_OLR - OmegaP*OLR*vcirc(mwp,R=OLR/ro,ro=ro,vo=vo)
+    # print ('\nThis is Jacobi Integral of OLR', E_J_OLR)
+
+    # E_J_CR = E_c_CR - OmegaP*CR*vcirc(mwp,R=CR/ro,ro=ro,vo=vo)
+    # print ('\nThis is Jacobi Integral of CR', E_J_CR)
+
+    ##### Find y-intercept: J_R = ((E_J(J_R=0) - E_c)/kappa) + (OmegaP/kappa)*Lz #####
+    ##### This formula has the form of y = b + m*x 
+    ##### (E_J(J_R=0) - E_c)/kappa = (pot +(1/2)*vcirc**2 - OmegaP*Lz - pot - (1/2)*vcirc**2)/kappa 
+    #####                          = -OmegaP*Lz/kappa 
+    #####                          = -OmegaP*R_g*vcirc/kappa
+
+    y_intercept_ILR = OmegaP*ILR*vcirc(mwp,R=ILR/ro,ro=ro,vo=vo)/kappa_ILR
+    y_intercept_OLR = OmegaP*OLR*vcirc(mwp,R=OLR/ro,ro=ro,vo=vo)/kappa_OLR
+    y_intercept_CR = OmegaP*CR*vcirc(mwp,R=CR/ro,ro=ro,vo=vo)/kappa_CR
+
+#     print ('\nThis is the y intercept when R = ILR', y_intercept_ILR) 
+#     print ('\nThis is the y intercept when R = OLR', y_intercept_OLR) 
+#     print ('\nThis is the y intercept when R = CR', y_intercept_CR) 
+    ####################################################################################
+
+    Lz = np.linspace(0,2600)
+
+    J_R_ILR = -y_intercept_ILR + (OmegaP*Lz)/kappa_ILR
+    J_R_OLR = -y_intercept_OLR + (OmegaP*Lz)/kappa_OLR
+    J_R_CR = -y_intercept_CR + (OmegaP*Lz)/kappa_CR
+
+    # plt.plot(Lz,J_R_ILR)
+    # plt.plot(Lz,J_R_OLR)
+    # plt.plot(Lz,J_R_CR)
+    # plt.xlabel('$L_{z}$')
+    # plt.ylabel('$J_{R}$')
+    
+    return J_R_ILR, J_R_OLR, J_R_CR
+
+#getJRfromJacobienergy(4)[0] # This outputs J_R_ILR
+# getJRfromJacobienergy(4)[1] # This outputs J_R_OLR
+# getJRfromJacobienergy(4)[2] # This outputs J_R_CR
